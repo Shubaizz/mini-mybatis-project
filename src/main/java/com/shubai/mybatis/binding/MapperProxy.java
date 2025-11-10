@@ -1,5 +1,7 @@
 package com.shubai.mybatis.binding;
 
+import com.shubai.mybatis.session.SqlSession;
+
 import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -15,13 +17,13 @@ import java.util.Map;
  */
 public class MapperProxy<T> implements InvocationHandler, Serializable {
 
-    // TODO:实际上这里应该是 SqlSession 类型，这里简化为 Map<String, String>，用于存储 Sql 语句，Key 是 "namespace.id"，Value 是 SQL 语句
-    private Map<String,String> sqlSession;
+    // SqlSession对象，用于执行SQL语句
+    private SqlSession sqlSession;
 
     // 被代理的Mapper接口对应的Class对象
     private final Class<T> mapperInterface;
 
-    public MapperProxy(Map<String,String> sqlSession, Class<T> mapperInterface) {
+    public MapperProxy(SqlSession sqlSession, Class<T> mapperInterface) {
         this.sqlSession = sqlSession;
         this.mapperInterface = mapperInterface;
     }
@@ -32,7 +34,16 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
         if (Object.class.equals(method.getDeclaringClass())){
             return method.invoke(this, args);
         } else {
-            return "MapperProxy:" + sqlSession.get(mapperInterface.getName()+ "." + method.getName());
+            // 根据 Mapper 接口和方法获取 statement = namespace.id
+            String statement = mapperInterface.getName() + "." + method.getName();
+            System.out.println("MapperProxy - statement: " + statement);
+            /**
+             * TODO:
+             *  因为{@link SqlSession}接口存在 select, insert, update, delete 等多种方法，这里不清楚需要调用哪一个方法。
+             *  待代码完善后，之后需要statement去mapper.xml中查找属于哪一种SQL操作，然后调用对应的方法。
+             *  这里简单起见，直接调用selectOne方法。
+             */
+            return sqlSession.selectOne(statement, args);
         }
     }
 

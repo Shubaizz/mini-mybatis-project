@@ -1,6 +1,9 @@
 package com.shubai.mybatis.binding;
 
 import com.shubai.mybatis.mapper.UserMapper;
+import com.shubai.mybatis.session.SqlSession;
+import com.shubai.mybatis.session.SqlSessionFactory;
+import com.shubai.mybatis.session.defaults.DefaultSqlSessionFactory;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -17,15 +20,18 @@ public class TestMapperProxyFactory {
 
     @Test
     public void test(){
-        // 创建 MapperProxyFactory 对象
-        MapperProxyFactory<UserMapper> mapperProxyFactory = new MapperProxyFactory<>(UserMapper.class);
-        // 创建 sqlSession 对象
-        HashMap<String , String> sqlSession = new HashMap<>();
-        // 填充 sqlSession 数据
-        sqlSession.put("com.shubai.mybatis.mapper.UserMapper.selectUserNameById","SELECT username FROM users WHERE id = ?");
-        // 获取 MapperProxy 对象
-        UserMapper userMapper = mapperProxyFactory.newInstance(sqlSession);
-        // 调用方法，触发代理逻辑
+        // 1. 使用 MapperRegistry 注册 Mapper
+        MapperRegistry registry = new MapperRegistry();
+        registry.addMappers("com.shubai.mybatis.mapper");
+
+        // 2. 从 SqlSessionFactory 获取 SqlSession
+        SqlSessionFactory sqlSessionFactory = new DefaultSqlSessionFactory(registry);
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+
+        // 3. 获取 Mapper 对象
+        UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+
+        // 4. 测试验证
         String result = userMapper.selectUserNameById("1");
         System.out.println(result);
     }
