@@ -1,5 +1,7 @@
 package com.shubai.mybatis.mapper;
 
+import com.shubai.mybatis.entity.User;
+
 /**
  * ClassName: UserMapper
  * Description:
@@ -10,5 +12,5 @@ package com.shubai.mybatis.mapper;
  */
 public interface UserMapper {
 
-    String selectUserNameById(String id);
+    User selectById(String id);
 }

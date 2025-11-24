@@ -4,6 +4,7 @@ import com.shubai.mybatis.binding.MapperRegistry;
 import com.shubai.mybatis.session.Configuration;
 import com.shubai.mybatis.session.SqlSession;
 import com.shubai.mybatis.session.SqlSessionFactory;
+import com.shubai.mybatis.type.TypeAliasRegistry;
 
 /**
  * ClassName: DefaultSqlSessionFactory
@@ -15,11 +16,19 @@ import com.shubai.mybatis.session.SqlSessionFactory;
  */
 public class DefaultSqlSessionFactory implements SqlSessionFactory {
 
-    // 全局配置对象
+    /**
+     * 全局配置对象
+     */
     private final Configuration configuration;
+
+    /**
+     * 类型别名注册中心
+     */
+    protected final TypeAliasRegistry typeAliasRegistry;
 
     public DefaultSqlSessionFactory(Configuration configuration) {
         this.configuration = configuration;
+        this.typeAliasRegistry = configuration.getTypeAliasRegistry();
     }
 
     @Override

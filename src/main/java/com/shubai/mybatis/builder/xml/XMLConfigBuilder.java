@@ -1,21 +1,23 @@
 package com.shubai.mybatis.builder.xml;
 
 import com.shubai.mybatis.builder.BaseBuilder;
+import com.shubai.mybatis.datasource.DataSourceFactory;
 import com.shubai.mybatis.io.Resources;
+import com.shubai.mybatis.mapping.BoundSql;
+import com.shubai.mybatis.mapping.Environment;
 import com.shubai.mybatis.mapping.MappedStatement;
 import com.shubai.mybatis.mapping.SqlCommandType;
 import com.shubai.mybatis.session.Configuration;
+import com.shubai.mybatis.transaction.TransactionFactory;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.xml.sax.InputSource;
 
+import javax.sql.DataSource;
 import java.io.Reader;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,13 +53,54 @@ public class XMLConfigBuilder extends BaseBuilder {
      */
     public Configuration parse() {
         try {
-            // 解析映射器
+            // 解析 <environments> 节点，配置数据源和事务管理器
+            environmentsElement(root.element("environments"));
+            // 解析 <mappers> 节点，注册 Mapper 映射器
             mapperElement(root.element("mappers"));
         } catch (Exception e) {
             throw new RuntimeException("Error parsing SQL Mapper Configuration. Cause: " + e, e);
         }
         return configuration;
     }
+
+    /**
+     * 解析 <environments> 节点，配置数据源和事务管理器
+     */
+    private void environmentsElement(Element environments) throws Exception {
+        // 获取 default 属性值，表示默认使用哪个环境
+        String environment = environments.attributeValue("default");
+        // 获取所有的 <environment> 子节点
+        List<Element> environmentElementList = environments.elements("environment");
+        // 遍历 <environments> 节点下的所有子节点
+        for (Element environmentElement : environmentElementList) {
+            // 获取 id 属性值，和 default 属性值进行比较，找到需要使用的环境
+            String id = environmentElement.attributeValue("id");
+            if (environment.equals(id)) {
+                // 根据 <environment> 标签的 <transactionManager> 子标签中的 type 属性值，从 typeAliasRegistry 中获取 TransactionFactory 对应的 Class 对象，然后通过 newInstance 创建对象
+                TransactionFactory txFactory = (TransactionFactory) typeAliasRegistry.resolveAlias(environmentElement.element("transactionManager").attributeValue("type")).newInstance();
+                // 获取 <environment> 标签中的 <dataSource> 子标签
+                Element dataSourceElement = environmentElement.element("dataSource");
+                // 根据 <dataSource> 标签中的 type 属性值，从 typeAliasRegistry 中获取 DataSourceFactory 对应的 Class 对象，然后通过 newInstance 创建对象
+                DataSourceFactory dataSourceFactory = (DataSourceFactory) typeAliasRegistry.resolveAlias(dataSourceElement.attributeValue("type")).newInstance();
+                // 解析 <dataSource> 标签中的所有 <property> 子标签，封装成 Properties 对象
+                List<Element> propertyElementList = dataSourceElement.elements("property");
+                Properties props = new Properties();
+                for (Element propertyElement : propertyElementList) {
+                    props.setProperty(propertyElement.attributeValue("name"), propertyElement.attributeValue("value"));
+                }
+                // 使用配置的属性值，创建数据源
+                dataSourceFactory.setProperties(props);
+                DataSource dataSource = dataSourceFactory.getDataSource();
+                // 创建 Environment.Builder，并设置 id、事务管理器和数据源
+                Environment.Builder environmentBuilder = new Environment.Builder(id)
+                        .transactionFactory(txFactory)
+                        .dataSource(dataSource);
+                // 构建 Environment 对象，并设置到 configuration 中
+                configuration.setEnvironment(environmentBuilder.build());
+            }
+        }
+    }
+
 
     /**
      * 解析 <mappers> 节点，注册 Mapper 映射器
@@ -110,10 +153,16 @@ public class XMLConfigBuilder extends BaseBuilder {
                 }
 
                 // 构建 MappedStatement 对象
+                // 根据命名空间和 id 拼接成唯一的 statementId
                 String statementId = namespace + "." + id;
+                // 获取 SQL 语句的类型，比如 select、insert、update、delete
                 String selectElementName = selectElement.getName();
+                // 将 SQL 语句类型转换为枚举类型 SqlCommandType
                 SqlCommandType sqlCommandType = SqlCommandType.valueOf(selectElementName.toUpperCase(Locale.ENGLISH));
-                MappedStatement mappedStatement = new MappedStatement.Builder(configuration, statementId, sqlCommandType, parameterType, resultType, sql, parameter).build();
+                // 创建 BoundSql 对象，封装处理后的 SQL 语句、参数映射表、参数类型和结果类型
+                BoundSql boundSql = new BoundSql(sql, parameter, parameterType, resultType);
+                // 使用 MappedStatement.Builder 构建 MappedStatement 对象
+                MappedStatement mappedStatement = new MappedStatement.Builder(configuration, statementId, sqlCommandType, boundSql).build();
                 // 将解析得到的 MappedStatement 对象存入 Configuration 中 mappedStatements 集合中
                 configuration.addMappedStatement(mappedStatement);
             }

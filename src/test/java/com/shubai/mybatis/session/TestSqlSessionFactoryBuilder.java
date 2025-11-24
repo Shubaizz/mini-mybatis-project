@@ -1,5 +1,6 @@
 package com.shubai.mybatis.session;
 
+import com.shubai.mybatis.entity.User;
 import com.shubai.mybatis.io.Resources;
 import com.shubai.mybatis.mapper.UserMapper;
 import org.junit.Test;
@@ -28,8 +29,8 @@ public class TestSqlSessionFactoryBuilder {
         UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
 
         // 3. 测试验证
-        String result = userMapper.selectUserNameById("1");
-        System.out.println(result);
+        User user = userMapper.selectById("1");
+        System.out.println(user);
     }
 
 }
