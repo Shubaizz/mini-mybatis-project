@@ -115,4 +115,12 @@ public interface SqlSession {
      * @return 一个绑定到当前SqlSession的映射器实例
      */
     <T> T getMapper(Class<T> type);
+
+    /**
+     * 获取当前的配置信息。
+     * 这些配置信息包含了数据库连接、SQL语句的定义等等。
+     *
+     * @return 配置对象
+     */
+    Configuration getConfiguration();
 }

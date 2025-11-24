@@ -1,6 +1,7 @@
 package com.shubai.mybatis.session.defaults;
 
 import com.shubai.mybatis.binding.MapperRegistry;
+import com.shubai.mybatis.session.Configuration;
 import com.shubai.mybatis.session.SqlSession;
 import com.shubai.mybatis.session.SqlSessionFactory;
 
@@ -14,15 +15,15 @@ import com.shubai.mybatis.session.SqlSessionFactory;
  */
 public class DefaultSqlSessionFactory implements SqlSessionFactory {
 
-    // Mapper 注册中心，用于获取 Mapper 代理对象
-    private final MapperRegistry mapperRegistry;
+    // 全局配置对象
+    private final Configuration configuration;
 
-    public DefaultSqlSessionFactory(MapperRegistry mapperRegistry) {
-        this.mapperRegistry = mapperRegistry;
+    public DefaultSqlSessionFactory(Configuration configuration) {
+        this.configuration = configuration;
     }
 
     @Override
     public SqlSession openSession() {
-        return new DefaultSqlSession(mapperRegistry);
+        return new DefaultSqlSession(configuration);
     }
 }

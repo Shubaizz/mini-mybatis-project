@@ -23,9 +23,13 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
     // 被代理的Mapper接口对应的Class对象
     private final Class<T> mapperInterface;
 
-    public MapperProxy(SqlSession sqlSession, Class<T> mapperInterface) {
+    // 映射器方法的缓存
+    private final Map<Method, MapperMethod> methodCache;
+
+    public MapperProxy(SqlSession sqlSession, Class<T> mapperInterface, Map<Method, MapperMethod> methodCache) {
         this.sqlSession = sqlSession;
         this.mapperInterface = mapperInterface;
+        this.methodCache = methodCache;
     }
 
     @Override
@@ -34,17 +38,22 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
         if (Object.class.equals(method.getDeclaringClass())){
             return method.invoke(this, args);
         } else {
-            // 根据 Mapper 接口和方法获取 statement = namespace.id
-            String statement = mapperInterface.getName() + "." + method.getName();
-            System.out.println("MapperProxy - statement: " + statement);
-            /**
-             * TODO:
-             *  因为{@link SqlSession}接口存在 select, insert, update, delete 等多种方法，这里不清楚需要调用哪一个方法。
-             *  待代码完善后，之后需要statement去mapper.xml中查找属于哪一种SQL操作，然后调用对应的方法。
-             *  这里简单起见，直接调用selectOne方法。
-             */
-            return sqlSession.selectOne(statement, args);
+            final MapperMethod mapperMethod = cachedMapperMethod(method);
+            return mapperMethod.execute(sqlSession, args);
         }
+    }
+
+    /**
+     * 在缓存中查找对应 Mapper 接口对应方法 method 的包装方法 MapperMethod
+     */
+    private MapperMethod cachedMapperMethod(Method method) {
+        MapperMethod mapperMethod = methodCache.get(method);
+        if (mapperMethod == null) {
+            // 如果缓存中没有，则新建对应映射器方法对象
+            mapperMethod = new MapperMethod(mapperInterface, method, sqlSession.getConfiguration());
+            methodCache.put(method, mapperMethod);
+        }
+        return mapperMethod;
     }
 
     private static final long serialVersionUID = 1L;

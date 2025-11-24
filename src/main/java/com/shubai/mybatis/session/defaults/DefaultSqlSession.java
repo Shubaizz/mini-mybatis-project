@@ -1,6 +1,7 @@
 package com.shubai.mybatis.session.defaults;
 
 import com.shubai.mybatis.binding.MapperRegistry;
+import com.shubai.mybatis.session.Configuration;
 import com.shubai.mybatis.session.SqlSession;
 
 import java.util.Collections;
@@ -16,11 +17,11 @@ import java.util.List;
  */
 public class DefaultSqlSession implements SqlSession {
 
-    // Mapper 注册中心，用于获取 Mapper 代理对象
-    private MapperRegistry mapperRegistry;
+    // 全局配置对象
+    private Configuration configuration;
 
-    public DefaultSqlSession(MapperRegistry mapperRegistry) {
-        this.mapperRegistry = mapperRegistry;
+    public DefaultSqlSession(Configuration configuration) {
+        this.configuration = configuration;
     }
 
     @Override
@@ -82,6 +83,11 @@ public class DefaultSqlSession implements SqlSession {
 
     @Override
     public <T> T getMapper(Class<T> mapperClass) {
-        return mapperRegistry.getMapper(mapperClass, this);
+        return configuration.getMapper(mapperClass, this);
+    }
+
+    @Override
+    public Configuration getConfiguration() {
+        return configuration;
     }
 }
