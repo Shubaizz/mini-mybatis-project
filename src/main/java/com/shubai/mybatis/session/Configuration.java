@@ -2,6 +2,8 @@ package com.shubai.mybatis.session;
 
 import com.shubai.mybatis.binding.MapperRegistry;
 import com.shubai.mybatis.datasource.druid.DruidDataSourceFactory;
+import com.shubai.mybatis.datasource.pooled.PooledDataSourceFactory;
+import com.shubai.mybatis.datasource.unpooled.UnpooledDataSourceFactory;
 import com.shubai.mybatis.mapping.Environment;
 import com.shubai.mybatis.mapping.MappedStatement;
 import com.shubai.mybatis.transaction.jdbc.JdbcTransactionFactory;
@@ -44,6 +46,9 @@ public class Configuration {
         // 注册事务管理器工厂的别名
         typeAliasRegistry.registerAlias("JDBC", JdbcTransactionFactory.class);
         typeAliasRegistry.registerAlias("DRUID", DruidDataSourceFactory.class);
+        // 注册数据源工厂的别名
+        typeAliasRegistry.registerAlias("UNPOOLED", UnpooledDataSourceFactory.class);
+        typeAliasRegistry.registerAlias("POOLED", PooledDataSourceFactory.class);
     }
 
     public void addMappers(String packageName) {

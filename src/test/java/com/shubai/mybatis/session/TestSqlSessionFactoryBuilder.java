@@ -31,6 +31,14 @@ public class TestSqlSessionFactoryBuilder {
         // 3. 测试验证
         User user = userMapper.selectById("1");
         System.out.println(user);
+
+        userMapper = sqlSession.getMapper(UserMapper.class);
+        user = userMapper.selectById("2");
+        System.out.println(user);
+
+        Object[] parameter = {1L};
+        User use = (User) sqlSession.selectOne("com.shubai.mybatis.mapper.UserMapper.selectById", parameter);
+        System.out.println(use);
     }
 
 }
